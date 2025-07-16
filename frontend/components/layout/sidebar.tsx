@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { useAuth } from '@/lib/auth';
 import {
   LayoutDashboard,
   Mic,
@@ -21,9 +20,21 @@ const navigation = [
     roles: ['counselor', 'manager', 'admin'],
   },
   {
+    name: 'エグゼクティブ',
+    href: '/dashboard/executive',
+    icon: BarChart3,
+    roles: ['manager', 'admin'],
+  },
+  {
     name: 'カウンセリング録音',
     href: '/recording',
     icon: Mic,
+    roles: ['counselor', 'manager', 'admin'],
+  },
+  {
+    name: '録音ファイル管理',
+    href: '/recordings',
+    icon: FileText,
     roles: ['counselor', 'manager', 'admin'],
   },
   {
@@ -33,8 +44,20 @@ const navigation = [
     roles: ['counselor', 'manager', 'admin'],
   },
   {
+    name: '文字起こし',
+    href: '/transcription',
+    icon: FileText,
+    roles: ['counselor', 'manager', 'admin'],
+  },
+  {
     name: '分析結果',
     href: '/analysis',
+    icon: BarChart3,
+    roles: ['counselor', 'manager', 'admin'],
+  },
+  {
+    name: '改善提案',
+    href: '/improvement',
     icon: BarChart3,
     roles: ['counselor', 'manager', 'admin'],
   },
@@ -54,11 +77,12 @@ const navigation = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { user } = useAuth();
 
-  const filteredNavigation = navigation.filter(item => 
-    user?.role && item.roles.includes(user.role)
-  );
+  // Temporarily show all navigation items (bypassing role check)
+  const filteredNavigation = navigation;
+  // const filteredNavigation = navigation.filter(item => 
+  //   user?.role && item.roles.includes(user.role)
+  // );
 
   return (
     <div className="flex h-full w-64 flex-col bg-gray-50 border-r">

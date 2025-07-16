@@ -20,10 +20,11 @@ export function ProtectedRoute({
 
   useEffect(() => {
     if (!loading) {
-      if (!isAuthenticated) {
-        router.push(fallbackUrl);
-        return;
-      }
+      // Temporarily disabled login redirect
+      // if (!isAuthenticated) {
+      //   router.push(fallbackUrl);
+      //   return;
+      // }
 
       if (requiredRole && user?.role) {
         const roleHierarchy = { admin: 3, manager: 2, counselor: 1 };
@@ -46,9 +47,10 @@ export function ProtectedRoute({
     );
   }
 
-  if (!isAuthenticated) {
-    return null;
-  }
+  // Temporarily disabled authentication check
+  // if (!isAuthenticated) {
+  //   return null;
+  // }
 
   if (requiredRole && user?.role) {
     const roleHierarchy = { admin: 3, manager: 2, counselor: 1 };

@@ -31,14 +31,58 @@ export default function RecordingPage() {
     setError('');
 
     try {
-      // TODO: Implement actual upload to S3 via backend API
-      // For now, simulate upload
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const token = localStorage.getItem('access_token');
+      
+      // Step 1: Get presigned upload URL
+      const uploadUrlResponse = await fetch('/api/v1/recordings/upload-url', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!uploadUrlResponse.ok) {
+        throw new Error('Failed to get upload URL');
+      }
+
+      const { upload_url, recording_id, file_key } = await uploadUrlResponse.json();
+
+      // Step 2: Upload file to S3
+      const uploadResponse = await fetch(upload_url, {
+        method: 'PUT',
+        body: recordedBlob,
+        headers: {
+          'Content-Type': 'audio/webm'
+        }
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error('Failed to upload file to S3');
+      }
+
+      // Step 3: Mark upload as complete
+      const completeResponse = await fetch(`/api/v1/recordings/${recording_id}/complete`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          file_key: file_key,
+          file_size: recordedBlob.size,
+          duration: Math.floor(recordedBlob.size / 16000) // Estimate duration
+        })
+      });
+
+      if (!completeResponse.ok) {
+        throw new Error('Failed to mark upload as complete');
+      }
       
       setUploadSuccess(true);
       setRecordedBlob(null);
-    } catch (error: any) {
-      setError('アップロードに失敗しました: ' + (error.message || '不明なエラー'));
+    } catch (error: unknown) {
+      setError('アップロードに失敗しました: ' + (error instanceof Error ? error.message : '不明なエラー'));
     } finally {
       setIsUploading(false);
     }

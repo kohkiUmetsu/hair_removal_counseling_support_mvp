@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import { useMediaRecorder } from '@/hooks/useMediaRecorder';
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { RecordingControls } from './RecordingControls';
@@ -33,9 +32,9 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({
       // ストリーム取得のための処理
       const mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
       setStream(mediaStream);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to start recording:', error);
-      onError?.(error.message || '録音の開始に失敗しました');
+      onError?.(error instanceof Error ? error.message : '録音の開始に失敗しました');
     }
   };
 
