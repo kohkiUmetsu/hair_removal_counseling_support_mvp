@@ -25,15 +25,6 @@ resource "aws_secretsmanager_secret_version" "db_password" {
   })
 }
 
-# RDS Subnet Group
-resource "aws_db_subnet_group" "main" {
-  name       = "${var.project_name}-${var.environment}-db-subnet-group"
-  subnet_ids = var.database_subnet_ids
-
-  tags = {
-    Name = "${var.project_name}-${var.environment}-db-subnet-group"
-  }
-}
 
 # RDS Parameter Group
 resource "aws_db_parameter_group" "main" {
@@ -61,7 +52,7 @@ resource "aws_db_instance" "main" {
 
   # Engine
   engine         = "postgres"
-  engine_version = "14.9"
+  engine_version = "14"
   instance_class = var.environment == "prod" ? "db.r5.large" : "db.t3.micro"
 
   # Storage
@@ -78,7 +69,7 @@ resource "aws_db_instance" "main" {
 
   # Network & Security
   vpc_security_group_ids = [var.database_security_group_id]
-  db_subnet_group_name   = aws_db_subnet_group.main.name
+  db_subnet_group_name   = var.database_subnet_group_name
   parameter_group_name   = aws_db_parameter_group.main.name
 
   # Backup & Maintenance

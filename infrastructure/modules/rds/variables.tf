@@ -18,6 +18,11 @@ variable "database_subnet_ids" {
   type        = list(string)
 }
 
+variable "database_subnet_group_name" {
+  description = "Database subnet group name"
+  type        = string
+}
+
 variable "database_security_group_id" {
   description = "Database security group ID"
   type        = string

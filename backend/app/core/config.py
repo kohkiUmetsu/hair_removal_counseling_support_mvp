@@ -3,7 +3,8 @@ Application configuration settings
 """
 import os
 from typing import Optional
-from pydantic import BaseSettings, PostgresDsn, validator
+from pydantic import field_validator
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
@@ -25,21 +26,7 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30
     
     # Database
-    DATABASE_URL: Optional[PostgresDsn] = None
-    
-    @validator("DATABASE_URL", pre=True)
-    def assemble_db_connection(cls, v: Optional[str]) -> str:
-        if isinstance(v, str):
-            return v
-        
-        # Build from environment variables
-        db_host = os.getenv("DB_HOST", "localhost")
-        db_port = os.getenv("DB_PORT", "5432")
-        db_user = os.getenv("DB_USER", "postgres")
-        db_password = os.getenv("DB_PASSWORD", "password")
-        db_name = os.getenv("DB_NAME", "counseling_db")
-        
-        return f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
+    DATABASE_URL: str = "postgresql://postgres:password@localhost:5432/counseling_db"
     
     # Redis (for future use with Celery)
     REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
@@ -63,7 +50,7 @@ class Settings(BaseSettings):
         "https://localhost:8000",
     ]
     
-    @validator("BACKEND_CORS_ORIGINS", pre=True)
+    @field_validator("BACKEND_CORS_ORIGINS", mode="before")
     def assemble_cors_origins(cls, v) -> list[str]:
         if isinstance(v, str):
             return [i.strip() for i in v.split(",")]
@@ -81,9 +68,11 @@ class Settings(BaseSettings):
     # Rate Limiting
     RATE_LIMIT_PER_MINUTE: int = 60
     
-    class Config:
-        case_sensitive = True
-        env_file = ".env"
+    model_config = {
+        "case_sensitive": True,
+        "env_file": ".env",
+        "extra": "ignore"
+    }
 
 
 # Create settings instance

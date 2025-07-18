@@ -9,7 +9,7 @@ import time
 import logging
 
 from app.core.config import settings
-from app.api import auth, sessions, analysis, recording, transcribe, ai_analysis, improvement, dashboard
+from app.api import auth, sessions, recording, transcribe, ai_analysis, improvement, dashboard
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -115,7 +115,6 @@ async def global_exception_handler(request: Request, exc: Exception):
 # Include routers
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["authentication"])
 app.include_router(sessions.router, prefix="/api/v1/sessions", tags=["sessions"])
-app.include_router(analysis.router, prefix="/api/v1/analysis", tags=["analysis"])
 app.include_router(recording.router, prefix="/api/v1/recordings", tags=["recordings"])
 app.include_router(transcribe.router, prefix="/api/v1/transcription", tags=["transcription"])
 app.include_router(ai_analysis.router, prefix="/api/v1/ai-analysis", tags=["ai-analysis"])

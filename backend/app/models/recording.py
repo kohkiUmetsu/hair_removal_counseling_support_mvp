@@ -29,7 +29,7 @@ class Recording(Base):
     )  # pending, uploading, completed, failed
     
     # メタデータ
-    metadata = Column(JSONB, nullable=True)
+    file_metadata = Column(JSONB, nullable=True)
     
     # 日時情報
     uploaded_at = Column(DateTime, nullable=True)
@@ -73,7 +73,7 @@ class Recording(Base):
             "content_type": self.content_type,
             "file_size": self.file_size,
             "upload_status": self.upload_status,
-            "metadata": self.metadata,
+            "file_metadata": self.file_metadata,
             "uploaded_at": self.uploaded_at.isoformat() if self.uploaded_at else None,
             "created_at": self.created_at.isoformat(),
             "updated_at": self.updated_at.isoformat(),

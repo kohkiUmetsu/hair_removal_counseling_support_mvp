@@ -15,7 +15,7 @@ from app.core.security import get_password_hash
 from app.models.clinic import Clinic
 from app.models.user import User, UserRole
 from app.models.customer import Customer
-from app.models.session import Session as CounselingSession, SessionStatus
+from app.models.session import Session as SessionModel, SessionStatus
 from datetime import datetime, timedelta
 import uuid
 
@@ -200,7 +200,7 @@ def seed_sessions(db: Session, customers: dict, users: dict) -> None:
         customer = customer_list[i % len(customer_list)]
         counselor = counselors[i % len(counselors)]
         
-        session = CounselingSession(
+        session = SessionModel(
             customer_id=customer.id,
             counselor_id=counselor.id,
             session_date=session_date,

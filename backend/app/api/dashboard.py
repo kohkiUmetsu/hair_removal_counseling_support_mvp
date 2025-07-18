@@ -3,7 +3,7 @@ Dashboard and analytics API endpoints
 """
 from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
 from sqlalchemy.orm import Session
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Dict
 import logging
 from datetime import datetime, timedelta
 import uuid
@@ -152,12 +152,12 @@ async def get_operations_dashboard(
 
 @router.get("/performance-report", response_model=PerformanceReport)
 async def get_performance_report(
-    report_type: str = Query(..., regex="^(counselor|clinic|customer)$"),
+    report_type: str = Query(..., pattern="^(counselor|clinic|customer)$"),
     start_date: datetime = Query(...),
     end_date: datetime = Query(...),
     clinic_ids: Optional[List[str]] = Query(None),
     counselor_ids: Optional[List[str]] = Query(None),
-    format: str = Query(default="json", regex="^(json|csv|pdf)$"),
+    format: str = Query(default="json", pattern="^(json|csv|pdf)$"),
     min_sessions: int = Query(default=1, ge=1),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -269,8 +269,8 @@ async def create_custom_report(
 @router.get("/trends", response_model=TrendAnalysisResponse)
 async def get_trend_analysis(
     metric: str = Query(..., description="Metric to analyze"),
-    time_period: str = Query(..., regex="^(7d|30d|90d|1y)$"),
-    granularity: str = Query(default="daily", regex="^(hourly|daily|weekly|monthly)$"),
+    time_period: str = Query(..., pattern="^(7d|30d|90d|1y)$"),
+    granularity: str = Query(default="daily", pattern="^(hourly|daily|weekly|monthly)$"),
     counselor_ids: Optional[List[str]] = Query(None),
     clinic_ids: Optional[List[str]] = Query(None),
     include_forecast: bool = Query(default=False),

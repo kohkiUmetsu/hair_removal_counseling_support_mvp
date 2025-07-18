@@ -33,20 +33,27 @@ export default function RecordingPage() {
     try {
       const token = localStorage.getItem('access_token');
       
-      // Step 1: Get presigned upload URL
-      const uploadUrlResponse = await fetch('/api/v1/recordings/upload-url', {
-        method: 'GET',
+      // Step 1: Create recording record and get presigned upload URL
+      const uploadUrlResponse = await fetch('/api/v1/recordings/', {
+        method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
-        }
+        },
+        body: JSON.stringify({
+          customer_id: 'dummy', // TODO: Replace with actual customer ID
+          session_date: new Date().toISOString(),
+          content_type: 'audio/webm',
+          file_size: recordedBlob.size,
+          filename: 'recording.webm'
+        })
       });
 
       if (!uploadUrlResponse.ok) {
         throw new Error('Failed to get upload URL');
       }
 
-      const { upload_url, recording_id, file_key } = await uploadUrlResponse.json();
+      const { upload_url, fields, file_path, recording_id } = await uploadUrlResponse.json();
 
       // Step 2: Upload file to S3
       const uploadResponse = await fetch(upload_url, {
@@ -67,12 +74,7 @@ export default function RecordingPage() {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          file_key: file_key,
-          file_size: recordedBlob.size,
-          duration: Math.floor(recordedBlob.size / 16000) // Estimate duration
-        })
+        }
       });
 
       if (!completeResponse.ok) {

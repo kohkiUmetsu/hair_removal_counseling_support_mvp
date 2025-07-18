@@ -118,20 +118,3 @@ export const sessionsApi = {
   },
 };
 
-// Analysis API calls
-export const analysisApi = {
-  startTranscription: (sessionId: string) =>
-    apiCall(() => 
-      api.post(`/api/v1/analysis/${sessionId}/transcribe`)
-    ),
-  
-  startAnalysis: (sessionId: string) =>
-    apiCall(() => 
-      api.post(`/api/v1/analysis/${sessionId}/analyze`)
-    ),
-  
-  getAnalysisResults: (sessionId: string) =>
-    apiCall(() => 
-      api.get(`/api/v1/analysis/${sessionId}/analysis`)
-    ),
-};

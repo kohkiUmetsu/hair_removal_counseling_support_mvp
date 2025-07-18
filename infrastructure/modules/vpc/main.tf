@@ -62,9 +62,9 @@ resource "aws_subnet" "database" {
   }
 }
 
-# NAT Gateways
+# NAT Gateway (Single for development environment to reduce costs)
 resource "aws_eip" "nat" {
-  count = length(var.availability_zones)
+  count = var.environment == "dev" ? 1 : length(var.availability_zones)
 
   domain = "vpc"
   depends_on = [aws_internet_gateway.main]
@@ -75,7 +75,7 @@ resource "aws_eip" "nat" {
 }
 
 resource "aws_nat_gateway" "main" {
-  count = length(var.availability_zones)
+  count = var.environment == "dev" ? 1 : length(var.availability_zones)
 
   allocation_id = aws_eip.nat[count.index].id
   subnet_id     = aws_subnet.public[count.index].id
@@ -108,7 +108,7 @@ resource "aws_route_table" "private" {
 
   route {
     cidr_block     = "0.0.0.0/0"
-    nat_gateway_id = aws_nat_gateway.main[count.index].id
+    nat_gateway_id = var.environment == "dev" ? aws_nat_gateway.main[0].id : aws_nat_gateway.main[count.index].id
   }
 
   tags = {

@@ -53,6 +53,9 @@ resource "aws_s3_bucket_lifecycle_configuration" "audio_files" {
     id     = "audio_files_lifecycle"
     status = "Enabled"
 
+    # Apply to all objects in the bucket
+    filter {}
+
     # Move to IA after 30 days
     transition {
       days          = 30
@@ -136,15 +139,18 @@ resource "aws_s3_bucket_lifecycle_configuration" "app_logs" {
     id     = "app_logs_lifecycle"
     status = "Enabled"
 
-    # Move to IA after 7 days
+    # Apply to all objects in the bucket
+    filter {}
+
+    # Move to IA after 30 days
     transition {
-      days          = 7
+      days          = 30
       storage_class = "STANDARD_IA"
     }
 
-    # Move to Glacier after 30 days
+    # Move to Glacier after 60 days
     transition {
-      days          = 30
+      days          = 60
       storage_class = "GLACIER"
     }
 

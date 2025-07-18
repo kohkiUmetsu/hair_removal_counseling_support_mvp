@@ -101,7 +101,7 @@ class ImprovementRecommendation(BaseModel):
 
 class PerformanceTrend(BaseModel):
     """パフォーマンストレンド"""
-    trend_direction: str = Field(..., regex="^(improving|declining|stable|unknown)$")
+    trend_direction: str = Field(..., pattern="^(improving|declining|stable|unknown)$")
     improvement_rate: float = Field(..., description="Percentage improvement rate")
     current_average: float = Field(..., ge=0.0, le=10.0)
     previous_average: float = Field(..., ge=0.0, le=10.0)
@@ -161,10 +161,10 @@ class FeedbackRequest(BaseModel):
     """フィードバックリクエスト"""
     analysis_id: str
     suggestion_id: Optional[str] = None
-    feedback_type: str = Field(..., regex="^(helpful|not_helpful|implemented|needs_clarification)$")
+    feedback_type: str = Field(..., pattern="^(helpful|not_helpful|implemented|needs_clarification)$")
     rating: Optional[int] = Field(None, ge=1, le=5)
     comments: Optional[str] = Field(None, max_length=1000)
-    implementation_status: Optional[str] = Field(None, regex="^(planned|in_progress|completed|abandoned)$")
+    implementation_status: Optional[str] = Field(None, pattern="^(planned|in_progress|completed|abandoned)$")
 
 class FeedbackResponse(BaseModel):
     """フィードバックレスポンス"""
@@ -197,7 +197,7 @@ class ImprovementSummary(BaseModel):
     low_priority_count: int
     categories_covered: List[SuggestionCategory]
     estimated_impact_score: float = Field(..., ge=0.0, le=10.0)
-    implementation_complexity: str = Field(..., regex="^(low|medium|high)$")
+    implementation_complexity: str = Field(..., pattern="^(low|medium|high)$")
 
 class ScriptOptimizationSummary(BaseModel):
     """スクリプト最適化サマリー"""

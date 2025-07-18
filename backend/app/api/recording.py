@@ -1,28 +1,27 @@
 """
 Recording API endpoints
 """
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from typing import List, Optional, Dict, Any
-import uuid
+from typing import Optional
 from datetime import datetime
 import logging
 
 from app.api.deps import get_db, get_current_user
 from app.schemas.recording import (
     RecordingCreate, RecordingResponse, RecordingInfo, RecordingDownload,
-    PresignedUrlRequest, PresignedUrlResponse, RecordingList, RecordingUpdate
+    RecordingList
 )
 from app.schemas.user import User
 from app.models.recording import Recording
 from app.models.customer import Customer
 from app.models.session import Session as SessionModel
 from app.services.storage_service import S3StorageService
-from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
 
 @router.post("/", response_model=RecordingResponse)
 async def create_recording_upload_url(
@@ -33,23 +32,27 @@ async def create_recording_upload_url(
     """録音ファイルアップロード用URLを生成"""
     try:
         # 顧客存在チェック
-        customer = db.query(Customer).filter(Customer.id == request.customer_id).first()
+        customer = db.query(Customer).filter(
+            Customer.id == request.customer_id
+        ).first()
         if not customer:
             raise HTTPException(status_code=404, detail="Customer not found")
-        
+
         # 権限チェック（カウンセラーは自分のクリニックの顧客のみ）
-        if current_user.role == "counselor" and customer.clinic_id != current_user.clinic_id:
+        if (current_user.role == "counselor" and
+                customer.clinic_id != current_user.clinic_id):
             raise HTTPException(status_code=403, detail="Access denied")
-        
+
         # ファイルタイプ検証
         storage_service = S3StorageService()
         if not storage_service.validate_file_type(request.content_type):
             raise HTTPException(status_code=400, detail="Unsupported file type")
-        
+
         # ファイルサイズ検証
-        if request.file_size and not storage_service.validate_file_size(request.file_size):
+        if (request.file_size and
+                not storage_service.validate_file_size(request.file_size)):
             raise HTTPException(status_code=400, detail="File size too large")
-        
+
         # ファイルパス生成
         file_extension = request.content_type.split("/")[-1]
         if file_extension == "webm":
@@ -58,7 +61,6 @@ async def create_recording_upload_url(
             file_extension = "mp4"
         else:
             file_extension = "webm"  # デフォルト
-            
         file_path = storage_service.generate_file_path(
             clinic_id=str(customer.clinic_id),
             customer_id=str(customer.id),
@@ -107,61 +109,6 @@ async def create_recording_upload_url(
         logger.error(f"Failed to create recording upload URL: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
-@router.get("/upload-url", response_model=PresignedUrlResponse)
-async def get_presigned_upload_url(
-    customer_id: str = Query(..., description="Customer ID"),
-    file_type: str = Query(..., description="File content type"),
-    file_size: Optional[int] = Query(None, description="File size in bytes"),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """プリサインドアップロードURL取得（ファイル情報なし）"""
-    try:
-        # 顧客存在チェック
-        customer = db.query(Customer).filter(Customer.id == customer_id).first()
-        if not customer:
-            raise HTTPException(status_code=404, detail="Customer not found")
-        
-        # 権限チェック
-        if current_user.role == "counselor" and customer.clinic_id != current_user.clinic_id:
-            raise HTTPException(status_code=403, detail="Access denied")
-        
-        storage_service = S3StorageService()
-        
-        # ファイルタイプ検証
-        if not storage_service.validate_file_type(file_type):
-            raise HTTPException(status_code=400, detail="Unsupported file type")
-        
-        # ファイルサイズ検証
-        if file_size and not storage_service.validate_file_size(file_size):
-            raise HTTPException(status_code=400, detail="File size too large")
-        
-        # ファイルパス生成
-        file_path = storage_service.generate_file_path(
-            clinic_id=str(customer.clinic_id),
-            customer_id=str(customer.id),
-            session_date=datetime.utcnow()
-        )
-        
-        # プリサインドURL生成
-        upload_info = await storage_service.generate_presigned_upload_url(
-            file_path=file_path,
-            content_type=file_type,
-            file_size=file_size
-        )
-        
-        return PresignedUrlResponse(
-            upload_url=upload_info["upload_url"],
-            fields=upload_info["fields"],
-            file_path=file_path,
-            expires_at=upload_info["expires_at"]
-        )
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Failed to get presigned upload URL: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
 
 @router.get("/{recording_id}", response_model=RecordingDownload)
 async def get_recording_download_url(
@@ -179,16 +126,19 @@ async def get_recording_download_url(
         
         if not recording:
             raise HTTPException(status_code=404, detail="Recording not found")
-        
+
         # 権限チェック
-        customer = db.query(Customer).filter(Customer.id == recording.customer_id).first()
-        if current_user.role == "counselor" and customer.clinic_id != current_user.clinic_id:
+        customer = db.query(Customer).filter(
+            Customer.id == recording.customer_id
+        ).first()
+        if (current_user.role == "counselor" and
+                customer.clinic_id != current_user.clinic_id):
             raise HTTPException(status_code=403, detail="Access denied")
-        
+
         # アップロード完了チェック
         if recording.upload_status != "completed":
             raise HTTPException(status_code=400, detail="Recording not uploaded yet")
-        
+
         storage_service = S3StorageService()
         
         # ファイル存在チェック
@@ -233,33 +183,35 @@ async def delete_recording(
         
         if not recording:
             raise HTTPException(status_code=404, detail="Recording not found")
-        
+
         # 権限チェック（管理者またはマネージャーのみ）
         if current_user.role not in ["admin", "manager"]:
             raise HTTPException(status_code=403, detail="Permission denied")
-        
+
         # マネージャーは自分のクリニックのみ
         if current_user.role == "manager":
-            customer = db.query(Customer).filter(Customer.id == recording.customer_id).first()
+            customer = db.query(Customer).filter(
+                Customer.id == recording.customer_id
+            ).first()
             if customer.clinic_id != current_user.clinic_id:
                 raise HTTPException(status_code=403, detail="Access denied")
-        
+
         storage_service = S3StorageService()
         
         # S3からファイル削除
         if await storage_service.file_exists(recording.file_path):
             await storage_service.delete_file(recording.file_path)
-        
+
         # ソフト削除
         recording.is_deleted = True
         recording.deleted_at = datetime.utcnow()
-        
+
         db.commit()
-        
+
         logger.info(f"Deleted recording {recording_id}")
-        
+
         return {"message": "Recording deleted successfully"}
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -277,26 +229,30 @@ async def list_recordings(
     """録音一覧取得"""
     try:
         query = db.query(Recording).filter(Recording.is_deleted == False)
-        
+
         # 顧客フィルター
         if customer_id:
             query = query.filter(Recording.customer_id == customer_id)
-        
+
         # 権限フィルター
         if current_user.role == "counselor":
             # カウンセラーは自分のクリニックの録音のみ
-            query = query.join(Customer).filter(Customer.clinic_id == current_user.clinic_id)
+            query = query.join(Customer).filter(
+                Customer.clinic_id == current_user.clinic_id
+            )
         elif current_user.role == "manager":
             # マネージャーは自分のクリニックの録音のみ
-            query = query.join(Customer).filter(Customer.clinic_id == current_user.clinic_id)
-        
+            query = query.join(Customer).filter(
+                Customer.clinic_id == current_user.clinic_id
+            )
+
         # 総数取得
         total = query.count()
-        
+
         # ページング
         offset = (page - 1) * per_page
         recordings = query.offset(offset).limit(per_page).all()
-        
+
         # レスポンス変換
         recording_info = []
         for recording in recordings:
@@ -310,14 +266,14 @@ async def list_recordings(
                 uploaded_at=recording.uploaded_at,
                 created_at=recording.created_at
             ))
-        
+
         return RecordingList(
             recordings=recording_info,
             total=total,
             page=page,
             per_page=per_page
         )
-        
+
     except Exception as e:
         logger.error(f"Failed to list recordings: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
@@ -338,10 +294,13 @@ async def complete_recording_upload(
         
         if not recording:
             raise HTTPException(status_code=404, detail="Recording not found")
-        
+
         # 権限チェック
-        customer = db.query(Customer).filter(Customer.id == recording.customer_id).first()
-        if current_user.role == "counselor" and customer.clinic_id != current_user.clinic_id:
+        customer = db.query(Customer).filter(
+            Customer.id == recording.customer_id
+        ).first()
+        if (current_user.role == "counselor" and
+                customer.clinic_id != current_user.clinic_id):
             raise HTTPException(status_code=403, detail="Access denied")
         
         storage_service = S3StorageService()
@@ -349,19 +308,19 @@ async def complete_recording_upload(
         # ファイル存在確認
         if not await storage_service.file_exists(recording.file_path):
             raise HTTPException(status_code=400, detail="File not found in storage")
-        
+
         # メタデータ更新
         metadata = await storage_service.get_file_metadata(recording.file_path)
         recording.file_size = metadata["size"]
         recording.upload_status = "completed"
         recording.uploaded_at = datetime.utcnow()
-        
+
         # セッションレコード作成または更新
         session = db.query(SessionModel).filter(
             SessionModel.customer_id == recording.customer_id,
             SessionModel.audio_file_path == recording.file_path
         ).first()
-        
+
         if not session:
             session = SessionModel(
                 customer_id=recording.customer_id,
@@ -372,15 +331,18 @@ async def complete_recording_upload(
                 status="recorded"
             )
             db.add(session)
-        
+
         recording.session_id = session.id
-        
+
         db.commit()
-        
+
         logger.info(f"Completed recording upload for {recording_id}")
-        
-        return {"message": "Recording upload completed", "session_id": str(session.id)}
-        
+
+        return {
+            "message": "Recording upload completed",
+            "session_id": str(session.id)
+        }
+
     except HTTPException:
         raise
     except Exception as e:

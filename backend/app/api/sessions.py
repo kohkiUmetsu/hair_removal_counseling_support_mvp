@@ -7,7 +7,7 @@ from sqlalchemy import and_
 
 from app.api import deps
 from app.models.user import User
-from app.models.session import CounselingSession
+from app.models.session import Session as SessionModel
 from app.schemas.session import (
     Session as SessionSchema,
     SessionCreate,
@@ -29,14 +29,14 @@ def read_sessions(
     """
     Retrieve sessions based on user role and permissions
     """
-    query = db.query(CounselingSession)
+    query = db.query(SessionModel)
     
     # Filter based on user role
     if current_user.role == "counselor":
-        query = query.filter(CounselingSession.counselor_id == current_user.id)
+        query = query.filter(SessionModel.counselor_id == current_user.id)
     elif current_user.role == "manager":
         # Managers can see sessions from their clinic
-        query = query.join(User, CounselingSession.counselor_id == User.id).filter(
+        query = query.join(User, SessionModel.counselor_id == User.id).filter(
             User.clinic_id == current_user.clinic_id
         )
     # Admins can see all sessions (no additional filter)
@@ -71,7 +71,7 @@ def create_session(
                 detail="Counselors can only create sessions for themselves"
             )
     
-    session = CounselingSession(
+    session = SessionModel(
         id=str(uuid4()),
         **session_in.dict(),
         status="recorded"
@@ -92,7 +92,7 @@ def read_session(
     """
     Get session by ID
     """
-    session = db.query(CounselingSession).filter(CounselingSession.id == session_id).first()
+    session = db.query(SessionModel).filter(SessionModel.id == session_id).first()
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
     
@@ -124,7 +124,7 @@ def update_session(
     """
     Update session
     """
-    session = db.query(CounselingSession).filter(CounselingSession.id == session_id).first()
+    session = db.query(SessionModel).filter(SessionModel.id == session_id).first()
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
     
@@ -164,7 +164,7 @@ def upload_recording(
     """
     Upload audio recording for a session
     """
-    session = db.query(CounselingSession).filter(CounselingSession.id == session_id).first()
+    session = db.query(SessionModel).filter(SessionModel.id == session_id).first()
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
     

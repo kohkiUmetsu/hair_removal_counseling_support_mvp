@@ -148,7 +148,7 @@ class DashboardRequest(BaseModel):
     filters: DashboardFilters
     include_trends: bool = Field(default=True)
     include_predictions: bool = Field(default=False)
-    granularity: str = Field(default="daily", regex="^(hourly|daily|weekly|monthly)$")
+    granularity: str = Field(default="daily", pattern="^(hourly|daily|weekly|monthly)$")
 
 class PerformanceReportFilters(BaseModel):
     """パフォーマンスレポートフィルター"""
@@ -175,8 +175,8 @@ class CustomReportRequest(BaseModel):
     metrics: List[str] = Field(..., min_items=1)
     dimensions: List[str] = Field(..., min_items=1)
     filters: PerformanceReportFilters
-    visualization_type: str = Field(..., regex="^(table|chart|graph|heatmap)$")
-    aggregation_method: str = Field(default="avg", regex="^(sum|avg|count|min|max)$")
+    visualization_type: str = Field(..., pattern="^(table|chart|graph|heatmap)$")
+    aggregation_method: str = Field(default="avg", pattern="^(sum|avg|count|min|max)$")
 
 class CustomReportResponse(BaseModel):
     """カスタムレポートレスポンス"""
@@ -190,8 +190,8 @@ class CustomReportResponse(BaseModel):
 class TrendAnalysisRequest(BaseModel):
     """トレンド分析リクエスト"""
     metric: str = Field(..., description="分析対象メトリクス")
-    time_period: str = Field(..., regex="^(7d|30d|90d|1y)$")
-    granularity: str = Field(default="daily", regex="^(hourly|daily|weekly|monthly)$")
+    time_period: str = Field(..., pattern="^(7d|30d|90d|1y)$")
+    granularity: str = Field(default="daily", pattern="^(hourly|daily|weekly|monthly)$")
     counselor_ids: Optional[List[str]] = None
     clinic_ids: Optional[List[str]] = None
     include_forecast: bool = Field(default=False)
@@ -208,10 +208,10 @@ class TrendAnalysisResponse(BaseModel):
 
 class AlertConfiguration(BaseModel):
     """アラート設定"""
-    alert_type: str = Field(..., regex="^(threshold|trend|anomaly)$")
+    alert_type: str = Field(..., pattern="^(threshold|trend|anomaly)$")
     metric: str
     threshold_value: Optional[float] = None
-    comparison_operator: Optional[str] = Field(None, regex="^(gt|lt|eq|gte|lte)$")
+    comparison_operator: Optional[str] = Field(None, pattern="^(gt|lt|eq|gte|lte)$")
     notification_channels: List[str] = Field(default_factory=list)
     is_active: bool = Field(default=True)
 
@@ -219,7 +219,7 @@ class DashboardAlert(BaseModel):
     """ダッシュボードアラート"""
     alert_id: str
     alert_type: str
-    severity: str = Field(..., regex="^(info|warning|critical)$")
+    severity: str = Field(..., pattern="^(info|warning|critical)$")
     message: str
     metric_value: float
     threshold_value: Optional[float] = None
@@ -229,8 +229,8 @@ class DashboardAlert(BaseModel):
 # Export schemas
 class ExportRequest(BaseModel):
     """エクスポートリクエスト"""
-    export_type: str = Field(..., regex="^(csv|pdf|excel|json)$")
-    data_source: str = Field(..., regex="^(dashboard|report|analysis)$")
+    export_type: str = Field(..., pattern="^(csv|pdf|excel|json)$")
+    data_source: str = Field(..., pattern="^(dashboard|report|analysis)$")
     filters: PerformanceReportFilters
     include_charts: bool = Field(default=True)
     email_recipients: Optional[List[str]] = None
@@ -240,6 +240,6 @@ class ExportResponse(BaseModel):
     export_id: str
     file_url: Optional[str] = None
     file_size_mb: Optional[float] = None
-    status: str = Field(..., regex="^(pending|completed|failed)$")
+    status: str = Field(..., pattern="^(pending|completed|failed)$")
     generated_at: datetime = Field(default_factory=datetime.utcnow)
     expires_at: Optional[datetime] = None

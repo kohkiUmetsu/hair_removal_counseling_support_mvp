@@ -59,31 +59,6 @@ class RecordingDownload(BaseModel):
     class Config:
         from_attributes = True
 
-class PresignedUrlRequest(BaseModel):
-    """プリサインドURL取得リクエスト"""
-    customer_id: str = Field(..., description="顧客ID")
-    file_type: str = Field(..., description="ファイルタイプ")
-    file_size: Optional[int] = Field(None, description="ファイルサイズ")
-
-    class Config:
-        from_attributes = True
-        json_schema_extra = {
-            "example": {
-                "customer_id": "123e4567-e89b-12d3-a456-426614174000",
-                "file_type": "audio/webm",
-                "file_size": 1024000
-            }
-        }
-
-class PresignedUrlResponse(BaseModel):
-    """プリサインドURLレスポンス"""
-    upload_url: str = Field(..., description="アップロード用URL")
-    fields: Dict[str, Any] = Field(..., description="アップロード用フィールド")
-    file_path: str = Field(..., description="ファイルパス")
-    expires_at: str = Field(..., description="URL有効期限")
-
-    class Config:
-        from_attributes = True
 
 class RecordingMetadata(BaseModel):
     """録音メタデータ"""
