@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Play, FileText, Calendar, User, Clock } from 'lucide-react';
+import apiClient from '@/lib/axios';
 
 interface Session {
   id: string;
@@ -32,22 +33,10 @@ export default function SessionsPage() {
   const fetchSessions = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('access_token');
-      const response = await fetch('/api/v1/sessions/', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch sessions');
-      }
-
-      const data = await response.json();
+      const { data } = await apiClient.get('/api/v1/sessions/');
       setSessions(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load sessions');
+    } catch (err: any) {
+      setError(err.response?.data?.message || err.message || 'Failed to load sessions');
     } finally {
       setLoading(false);
     }

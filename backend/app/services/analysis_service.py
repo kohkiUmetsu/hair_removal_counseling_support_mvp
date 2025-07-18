@@ -24,7 +24,13 @@ class AnalysisService:
     def __init__(self):
         self.openai_client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
         self.prompt_service = PromptService()
-        self.model = settings.OPENAI_MODEL or "gpt-4-turbo-preview"
+        
+        # 環境に応じてモデルを選択（本番環境では高性能、開発環境では低コスト）
+        if settings.ENVIRONMENT == "prod":
+            self.model = settings.OPENAI_MODEL_PRODUCTION or "gpt-4.1"
+        else:
+            self.model = settings.OPENAI_MODEL or "gpt-4.1-mini"
+            
         self.max_tokens = 4000
         self.temperature = 0.1
         
@@ -494,10 +500,25 @@ class AnalysisService:
             raise Exception(f"OpenAI API呼び出しエラー: {e}")
 
     def _calculate_cost(self, tokens_used: int) -> float:
-        """コスト計算（GPT-4の概算料金）"""
-        # GPT-4の概算料金（2024年1月時点）
-        input_cost_per_1k = 0.03  # $0.03 per 1K tokens
-        output_cost_per_1k = 0.06  # $0.06 per 1K tokens
+        """コスト計算（2025年最新料金）"""
+        
+        # モデル別料金設定（2025年4月時点）
+        if "gpt-4.1-mini" in self.model:
+            # GPT-4.1 Mini料金
+            input_cost_per_1k = 0.0004   # $0.40 per 1M tokens = $0.0004 per 1K
+            output_cost_per_1k = 0.0016  # $1.60 per 1M tokens = $0.0016 per 1K
+        elif "gpt-4.1" in self.model:
+            # GPT-4.1料金
+            input_cost_per_1k = 0.002    # $2.00 per 1M tokens = $0.002 per 1K
+            output_cost_per_1k = 0.008   # $8.00 per 1M tokens = $0.008 per 1K
+        elif "gpt-4o" in self.model:
+            # GPT-4o料金（マルチモーダル）
+            input_cost_per_1k = 0.005    # $5.00 per 1M tokens = $0.005 per 1K
+            output_cost_per_1k = 0.015   # $15.00 per 1M tokens = $0.015 per 1K
+        else:
+            # デフォルト（GPT-4.1 Mini相当）
+            input_cost_per_1k = 0.0004
+            output_cost_per_1k = 0.0016
         
         # 簡易計算（入力と出力を半々と仮定）
         return (tokens_used / 1000) * ((input_cost_per_1k + output_cost_per_1k) / 2)

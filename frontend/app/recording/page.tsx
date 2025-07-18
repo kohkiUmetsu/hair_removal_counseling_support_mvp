@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Upload, FileAudio, CheckCircle } from 'lucide-react';
+import apiClient from '@/lib/axios';
 
 export default function RecordingPage() {
   const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
@@ -34,57 +35,30 @@ export default function RecordingPage() {
       const token = localStorage.getItem('access_token');
       
       // Step 1: Create recording record and get presigned upload URL
-      const uploadUrlResponse = await fetch('/api/v1/recordings/', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          customer_id: 'dummy', // TODO: Replace with actual customer ID
-          session_date: new Date().toISOString(),
-          content_type: 'audio/webm',
-          file_size: recordedBlob.size,
-          filename: 'recording.webm'
-        })
+      const { data: uploadData } = await apiClient.post('/api/v1/recordings/', {
+        customer_id: 'dummy', // TODO: Replace with actual customer ID
+        session_date: new Date().toISOString(),
+        content_type: 'audio/webm',
+        file_size: recordedBlob.size,
+        filename: 'recording.webm'
       });
 
-      if (!uploadUrlResponse.ok) {
-        throw new Error('Failed to get upload URL');
-      }
-
-      const { upload_url, fields, file_path, recording_id } = await uploadUrlResponse.json();
+      const { upload_url, fields, file_path, recording_id } = uploadData;
 
       // Step 2: Upload file to S3
-      const uploadResponse = await fetch(upload_url, {
-        method: 'PUT',
-        body: recordedBlob,
+      await apiClient.put(upload_url, recordedBlob, {
         headers: {
           'Content-Type': 'audio/webm'
         }
       });
 
-      if (!uploadResponse.ok) {
-        throw new Error('Failed to upload file to S3');
-      }
-
       // Step 3: Mark upload as complete
-      const completeResponse = await fetch(`/api/v1/recordings/${recording_id}/complete`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!completeResponse.ok) {
-        throw new Error('Failed to mark upload as complete');
-      }
+      await apiClient.put(`/api/v1/recordings/${recording_id}/complete`);
       
       setUploadSuccess(true);
       setRecordedBlob(null);
-    } catch (error: unknown) {
-      setError('アップロードに失敗しました: ' + (error instanceof Error ? error.message : '不明なエラー'));
+    } catch (error: any) {
+      setError('アップロードに失敗しました: ' + (error.response?.data?.message || error.message || '不明なエラー'));
     } finally {
       setIsUploading(false);
     }

@@ -17,6 +17,7 @@ import {
   Play,
   Upload
 } from 'lucide-react';
+import apiClient from '@/lib/axios';
 
 interface SessionDetail {
   id: string;
@@ -70,22 +71,10 @@ export default function SessionDetailPage() {
   const fetchSessionDetail = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('access_token');
-      const response = await fetch(`/api/v1/sessions/${sessionId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch session details');
-      }
-
-      const data = await response.json();
+      const { data } = await apiClient.get(`/api/v1/sessions/${sessionId}`);
       setSession(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load session details');
+    } catch (err: any) {
+      setError(err.response?.data?.message || err.message || 'Failed to load session details');
     } finally {
       setLoading(false);
     }
@@ -95,28 +84,16 @@ export default function SessionDetailPage() {
     if (!session?.recording) return;
 
     try {
-      const token = localStorage.getItem('access_token');
-      const response = await fetch('/api/v1/transcription/', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          recording_id: session.recording.id,
-          language: 'ja',
-          include_timestamps: true
-        })
+      await apiClient.post('/api/v1/transcription/', {
+        recording_id: session.recording.id,
+        language: 'ja',
+        include_timestamps: true
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to start transcription');
-      }
 
       alert('文字起こしを開始しました');
       fetchSessionDetail();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to start transcription');
+    } catch (err: any) {
+      setError(err.response?.data?.message || err.message || 'Failed to start transcription');
     }
   };
 
@@ -124,29 +101,17 @@ export default function SessionDetailPage() {
     if (!session?.transcription) return;
 
     try {
-      const token = localStorage.getItem('access_token');
-      const response = await fetch('/api/v1/ai-analysis/', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          session_id: sessionId,
-          analysis_type: 'comprehensive',
-          include_sentiment: true,
-          include_recommendations: true
-        })
+      await apiClient.post('/api/v1/ai-analysis/', {
+        session_id: sessionId,
+        analysis_type: 'comprehensive',
+        include_sentiment: true,
+        include_recommendations: true
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to start analysis');
-      }
 
       alert('AI分析を開始しました');
       fetchSessionDetail();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to start analysis');
+    } catch (err: any) {
+      setError(err.response?.data?.message || err.message || 'Failed to start analysis');
     }
   };
 

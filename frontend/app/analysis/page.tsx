@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarChart3, TrendingUp, FileText, Download, RefreshCw, Calendar, Play } from 'lucide-react';
+import apiClient from '@/lib/axios';
 
 interface AnalysisTask {
   id: string;
@@ -62,47 +63,24 @@ export default function AnalysisPage() {
   const fetchAnalysisData = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('access_token');
       
-      // Fetch analysis tasks
-      const tasksResponse = await fetch('/api/v1/ai-analysis/', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      // Fetch analysis tasks and statistics in parallel
+      const [tasksResponse, statsResponse] = await Promise.all([
+        apiClient.get('/api/v1/ai-analysis/'),
+        apiClient.get('/api/v1/ai-analysis/stats')
+      ]);
 
-      // Fetch analysis statistics
-      const statsResponse = await fetch('/api/v1/ai-analysis/stats', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      let tasksData: AnalysisTask[] = [];
-
-      if (tasksResponse.ok) {
-        tasksData = await tasksResponse.json();
-        setTasks(tasksData);
-      }
-
-      if (statsResponse.ok) {
-        const statsData = await statsResponse.json();
-        setStats(statsData);
-      }
+      const tasksData: AnalysisTask[] = tasksResponse.data;
+      setTasks(tasksData);
+      setStats(statsResponse.data);
 
       // Fetch completed analysis results for display
       const completedTasks = tasksData.filter((task: AnalysisTask) => task.status === 'completed');
       if (completedTasks.length > 0) {
         const resultsPromises = completedTasks.slice(0, 5).map(async (task: AnalysisTask) => {
           try {
-            const resultResponse = await fetch(`/api/v1/ai-analysis/result/${task.id}`, {
-              headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (resultResponse.ok) {
-              return await resultResponse.json();
-            }
+            const { data } = await apiClient.get(`/api/v1/ai-analysis/result/${task.id}`);
+            return data;
           } catch {
             return null;
           }
@@ -112,8 +90,8 @@ export default function AnalysisPage() {
         setResults(resultsData.filter(Boolean));
       }
 
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load analysis data');
+    } catch (err: any) {
+      setError(err.response?.data?.message || err.message || 'Failed to load analysis data');
     } finally {
       setLoading(false);
     }

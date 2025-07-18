@@ -16,6 +16,7 @@ import {
   User,
   Volume2
 } from 'lucide-react';
+import apiClient from '@/lib/axios';
 
 interface Recording {
   id: string;
@@ -43,22 +44,10 @@ export default function RecordingsPage() {
   const fetchRecordings = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('access_token');
-      const response = await fetch('/api/v1/recordings/', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch recordings');
-      }
-
-      const data = await response.json();
+      const { data } = await apiClient.get('/api/v1/recordings/');
       setRecordings(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load recordings');
+    } catch (err: any) {
+      setError(err.response?.data?.message || err.message || 'Failed to load recordings');
     } finally {
       setLoading(false);
     }
@@ -66,18 +55,8 @@ export default function RecordingsPage() {
 
   const handleDownload = async (recordingId: string, filename: string) => {
     try {
-      const token = localStorage.getItem('access_token');
-      const response = await fetch(`/api/v1/recordings/${recordingId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to get download URL');
-      }
-
-      const { download_url } = await response.json();
+      const { data } = await apiClient.get(`/api/v1/recordings/${recordingId}`);
+      const { download_url } = data;
       
       // Create a temporary anchor element to trigger download
       const link = document.createElement('a');
@@ -86,8 +65,8 @@ export default function RecordingsPage() {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to download recording');
+    } catch (err: any) {
+      setError(err.response?.data?.message || err.message || 'Failed to download recording');
     }
   };
 
@@ -97,22 +76,12 @@ export default function RecordingsPage() {
     }
 
     try {
-      const token = localStorage.getItem('access_token');
-      const response = await fetch(`/api/v1/recordings/${recordingId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete recording');
-      }
-
+      await apiClient.delete(`/api/v1/recordings/${recordingId}`);
+      
       // Remove from local state
       setRecordings(prev => prev.filter(r => r.id !== recordingId));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete recording');
+    } catch (err: any) {
+      setError(err.response?.data?.message || err.message || 'Failed to delete recording');
     }
   };
 

@@ -19,6 +19,12 @@ pydantic-settings==2.0.0
 # HTTP client
 httpx==0.25.2
 
+# File operations
+aiofiles==24.1.0
+
+# Template engine
+jinja2==3.1.6
+
 # Configuration
 python-dotenv==1.0.0
 

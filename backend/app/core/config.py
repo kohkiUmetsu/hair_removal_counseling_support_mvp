@@ -39,8 +39,9 @@ class Settings(BaseSettings):
     
     # OpenAI
     OPENAI_API_KEY: Optional[str] = os.getenv("OPENAI_API_KEY")
-    OPENAI_MODEL: str = "gpt-4-turbo-preview"
-    WHISPER_MODEL: str = "whisper-1"
+    OPENAI_MODEL: str = "gpt-4.1-mini"  # 2025年最新：コスパ最高
+    OPENAI_MODEL_PRODUCTION: str = "gpt-4.1"  # 2025年最新：本番用高性能
+    WHISPER_MODEL: str = "whisper-1"  # 安定版継続使用
     
     # CORS
     BACKEND_CORS_ORIGINS: list[str] = [

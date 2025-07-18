@@ -18,6 +18,7 @@ import {
   Target,
   Award
 } from 'lucide-react';
+import apiClient from '@/lib/axios';
 
 interface ImprovementSuggestion {
   id: string;
@@ -70,32 +71,19 @@ export default function ImprovementPage() {
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('access_token');
       
       // Fetch success patterns
-      const patternsResponse = await fetch('/api/v1/improvement/success-patterns', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-
-      if (patternsResponse.ok) {
-        const patternsData = await patternsResponse.json();
-        setSuccessPatterns(patternsData);
-      }
+      const { data: patternsData } = await apiClient.get('/api/v1/improvement/success-patterns');
+      setSuccessPatterns(patternsData);
 
       // Fetch performance trends for current user if counselor
       if (user?.role === 'counselor') {
-        const trendsResponse = await fetch(`/api/v1/improvement/performance-trends/${user.id}`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-
-        if (trendsResponse.ok) {
-          const trendsData = await trendsResponse.json();
-          setPerformanceTrends([trendsData]);
-        }
+        const { data: trendsData } = await apiClient.get(`/api/v1/improvement/performance-trends/${user.id}`);
+        setPerformanceTrends([trendsData]);
       }
 
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load improvement data');
+    } catch (err: any) {
+      setError(err.response?.data?.message || err.message || 'Failed to load improvement data');
     } finally {
       setLoading(false);
     }
@@ -109,28 +97,15 @@ export default function ImprovementPage() {
     if (!scriptPrompt.trim()) return;
 
     try {
-      const token = localStorage.getItem('access_token');
-      const response = await fetch('/api/v1/improvement/generate-script', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          prompt: scriptPrompt,
-          context: 'counseling_session',
-          tone: 'professional_friendly'
-        })
+      const { data } = await apiClient.post('/api/v1/improvement/generate-script', {
+        prompt: scriptPrompt,
+        context: 'counseling_session',
+        tone: 'professional_friendly'
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to generate script');
-      }
-
-      const { script } = await response.json();
-      setGeneratedScript(script);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to generate script');
+      setGeneratedScript(data.script);
+    } catch (err: any) {
+      setError(err.response?.data?.message || err.message || 'Failed to generate script');
     }
   };
 
@@ -138,28 +113,16 @@ export default function ImprovementPage() {
     if (!feedbackText.trim()) return;
 
     try {
-      const token = localStorage.getItem('access_token');
-      const response = await fetch('/api/v1/improvement/feedback', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          feedback_text: feedbackText,
-          feedback_type: 'general',
-          rating: 5
-        })
+      await apiClient.post('/api/v1/improvement/feedback', {
+        feedback_text: feedbackText,
+        feedback_type: 'general',
+        rating: 5
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to submit feedback');
-      }
 
       setFeedbackText('');
       alert('フィードバックを送信しました');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to submit feedback');
+    } catch (err: any) {
+      setError(err.response?.data?.message || err.message || 'Failed to submit feedback');
     }
   };
 

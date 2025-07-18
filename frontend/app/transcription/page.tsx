@@ -15,6 +15,7 @@ import {
   Loader,
   BarChart3
 } from 'lucide-react';
+import apiClient from '@/lib/axios';
 
 interface TranscriptionTask {
   id: string;
@@ -69,30 +70,17 @@ export default function TranscriptionPage() {
 
   const fetchData = async () => {
     try {
-      const token = localStorage.getItem('access_token');
-      
       // Fetch tasks and stats in parallel
       const [tasksResponse, statsResponse] = await Promise.all([
-        fetch('/api/v1/transcription/', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        }),
-        fetch('/api/v1/transcription/stats', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        })
+        apiClient.get('/api/v1/transcription/'),
+        apiClient.get('/api/v1/transcription/stats')
       ]);
 
-      if (tasksResponse.ok) {
-        const tasksData = await tasksResponse.json();
-        setTasks(tasksData);
-      }
+      setTasks(tasksResponse.data);
+      setStats(statsResponse.data);
 
-      if (statsResponse.ok) {
-        const statsData = await statsResponse.json();
-        setStats(statsData);
-      }
-
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load transcription data');
+    } catch (err: any) {
+      setError(err.response?.data?.message || err.message || 'Failed to load transcription data');
     } finally {
       setLoading(false);
     }
@@ -100,37 +88,19 @@ export default function TranscriptionPage() {
 
   const retryTranscription = async (taskId: string) => {
     try {
-      const token = localStorage.getItem('access_token');
-      const response = await fetch(`/api/v1/transcription/retry/${taskId}`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to retry transcription');
-      }
-
+      await apiClient.post(`/api/v1/transcription/retry/${taskId}`);
       fetchData();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to retry transcription');
+    } catch (err: any) {
+      setError(err.response?.data?.message || err.message || 'Failed to retry transcription');
     }
   };
 
   const getTranscriptionResult = async (taskId: string) => {
     try {
-      const token = localStorage.getItem('access_token');
-      const response = await fetch(`/api/v1/transcription/result/${taskId}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to get transcription result');
-      }
-
-      const result = await response.json();
-      setSelectedResult(result);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to get transcription result');
+      const { data } = await apiClient.get(`/api/v1/transcription/result/${taskId}`);
+      setSelectedResult(data);
+    } catch (err: any) {
+      setError(err.response?.data?.message || err.message || 'Failed to get transcription result');
     }
   };
 

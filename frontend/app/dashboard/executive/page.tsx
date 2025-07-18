@@ -16,6 +16,7 @@ import {
   AlertCircle,
   Clock
 } from 'lucide-react';
+import apiClient from '@/lib/axios';
 
 interface ExecutiveDashboardData {
   overview: {
@@ -79,22 +80,10 @@ export default function ExecutiveDashboardPage() {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('access_token');
-      const response = await fetch('/api/v1/dashboard/executive', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch executive dashboard data');
-      }
-
-      const data = await response.json();
+      const { data } = await apiClient.get('/api/v1/dashboard/executive');
       setDashboardData(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load dashboard data');
+    } catch (err: any) {
+      setError(err.response?.data?.message || err.message || 'Failed to load dashboard data');
     } finally {
       setLoading(false);
     }
@@ -102,28 +91,16 @@ export default function ExecutiveDashboardPage() {
 
   const exportReport = async () => {
     try {
-      const token = localStorage.getItem('access_token');
-      const response = await fetch('/api/v1/dashboard/export', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          report_type: 'executive_summary',
-          date_range: '30_days',
-          format: 'pdf'
-        })
+      const { data } = await apiClient.post('/api/v1/dashboard/export', {
+        report_type: 'executive_summary',
+        date_range: '30_days',
+        format: 'pdf'
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to export report');
-      }
-
-      const { export_id } = await response.json();
+      
+      const { export_id } = data;
       alert(`レポート生成を開始しました。Export ID: ${export_id}`);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to export report');
+    } catch (err: any) {
+      setError(err.response?.data?.message || err.message || 'Failed to export report');
     }
   };
 
